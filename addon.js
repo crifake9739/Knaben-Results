@@ -593,7 +593,8 @@ app.get("/:config/stream/:type/:id{/:extra}.json", async (req, res) => {
         name: `torbox ${ele.cached ? "⚡" : "⏳"}`,
         description: `${(ele.bytes / 1024 / 1024 / 1024).toFixed(2)}GB - ${ele.title}`,
         url: ele.cached
-          ? `http://localhost:${PORT}/${TORBOX_API_KEY}/resolve/${ele.hash}/${encodeURIComponent(ele.magnetUrl)}`
+          // ? `https://localhost:${PORT}/${TORBOX_API_KEY}/resolve/${ele.hash}/${encodeURIComponent(ele.magnetUrl)}`
+          ? `https://knaben-results.vercel.app/${TORBOX_API_KEY}/resolve/${ele.hash}/${encodeURIComponent(ele.magnetUrl)}`
           : ele.magnetUrl,
       }));
     }
