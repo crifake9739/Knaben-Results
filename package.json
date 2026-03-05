@@ -1,13 +1,17 @@
 {
-	"name": "stremio-addon-Knaben",
-	"version": "0.0.1",
-	"description": "",
-	"scripts": {
-		"start": "node addon.js"
-	},
-	"dependencies": {
-		"cors": "^2.8.6",
-		"express": "^5.2.1",
-		"stremio-addon-sdk": "1.1.x"
-	}
+    "name": "stremio-addon-Knaben",
+    "version": "0.0.1",
+    "description": "Knaben provider for Stremio",
+    "main": "addon.js",
+    "scripts": {
+        "start": "node addon.js"
+    },
+    "engines": {
+        "node": "20.x"
+    },
+    "dependencies": {
+        "cors": "^2.8.6",
+        "express": "^5.2.1",
+        "stremio-addon-sdk": "1.1.x"
+    }
 }

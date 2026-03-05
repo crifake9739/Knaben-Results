@@ -645,6 +645,14 @@ app.get("/:TORBOX_API_KEY/resolve/:hash/:magnet", async (req, res) => {
 });
 
 // 192.168.1.8:7000
-app.listen(PORT, '0.0.0.0', () =>
-  console.log(`Addon active`),
-);
+// app.listen(PORT, '0.0.0.0', () =>
+//   console.log(`Addon active`),
+// );
+
+if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.PORT || 7000;
+    app.listen(port, () => console.log(`Local server on port ${port}`));
+}
+
+// IMPORTANT: Export the app for Vercel
+module.exports = app;
