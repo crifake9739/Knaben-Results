@@ -12,21 +12,16 @@ export async function getMetadataFromPDB(PDB_api_key, catalog, query, skip) {
   skip = parseInt(skip / 20 + 1) || 1;
   const date = new Date();
   date.setDate(date.getDate() - 1); // Subtract one day
-  const formattedDate = date.toISOString().split("T")[0];
   let params =
     query && query.length > 3
       ? {
           q: query,
-          orderBy: "recently_released",
-          date: formattedDate,
-          date_operation: "<",
+          orderBy: "most_relevant",
           per_page: 20,
           page: skip,
         }
       : {
-          orderBy: "recently_released",
-          date: formattedDate,
-          date_operation: "<",
+          orderBy: "most_relevant",
           per_page: 20,
           page: skip,
         };
@@ -90,7 +85,8 @@ export async function getMetadataFromPDB(PDB_api_key, catalog, query, skip) {
       duration: ele.duration,
       background: ele.background.full,
       performers: ele.performers[0] ? ele.performers.map((e) => e.name) : null,
-      site: ele.site.network?.name || ele.site.name || null,
+      site: ele.site.name || null,
+      network: ele.site.network?.name || null,
       tags: ele.tags[0] ? ele.tags.map((e) => e.name) : null,
     }));
 

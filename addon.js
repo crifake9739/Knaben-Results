@@ -118,14 +118,14 @@ async function THEPDB_metadata(metas) {
       type: "movie",
       name: ele.title,
       genres: ele.tags,
-      poster: ele.poster || ele.image || ele.background || poster,
-      // poster: poster,
+      // poster: ele.poster || ele.image || ele.background || poster,
+      poster: poster,
       posterShape: "poster",
-      background: ele.background || ele.image || ele.poster || poster,
-      // background: poster,
-      logo: ele.poster || ele.image || ele.background || poster,
-      // logo: poster,
-      description: `Channel : ${ele.site} \n${ele.description}`,
+      // background: ele.background || ele.image || ele.poster || poster,
+      background: poster,
+      // logo: ele.poster || ele.image || ele.background || poster,
+      logo: poster,
+      description: `Channel : ${ele.site} Network : ${ele.network} ${ele.description}`,
       releaseInfo: ele.date ? new Date(ele.date).getFullYear() : null,
       released: ele.date ? new Date(ele.date) : null,
       cast: ele.performers ? ele.performers : null,
@@ -135,6 +135,7 @@ async function THEPDB_metadata(metas) {
       runtime: ele.duration ? `${(ele.duration / 60).toFixed(0)} mins` : null,
       website: ele.url ? ele.url : null,
       site: ele.site,
+      network: ele.network,
       performers: ele.performers,
       external_id: ele.external_id,
     }),
@@ -525,45 +526,25 @@ app.get("{/:config}/stream/:type/:id{/:extra}.json", async (req, res) => {
         if (current_meta.external_id) {
           data = await api.knaben_api_hit(current_meta.external_id);
         }
-      } else if (catalog.startsWith("movie")) {
-        const scene = {
-          site: current_meta.site || null,
-          date: current_meta.released || null,
-          performers: current_meta.performers || null,
-        };
-        query = [current_meta.name, ...parseSceneToTorrentString(scene)];
-        if (query) {
-          const api1 = await api.knaben_api_hit(query[0]);
-          if (api1.length === 0) {
-            var temp = [];
-            for (var i = 1; i < query.length - 1; i++) {
-              var api2 = await api.knaben_api_hit(query[i]);
-              temp = temp.concat(api2);
-            }
-            data = [...new Set(temp)];
-          } else {
-            data = [...new Set(api1)];
-          }
-        }
       } else {
-        const scene = {
+        const scene1 = {
           site: current_meta.site || null,
           date: current_meta.released || null,
           performers: current_meta.performers || null,
         };
-        query = parseSceneToTorrentString(scene);
+        const scene2 = {
+          site: current_meta.network || null,
+          date: current_meta.released || null,
+          performers: current_meta.performers || null,
+        };
+        query = [...new Set([current_meta.name, ...parseSceneToTorrentString(scene1), ...parseSceneToTorrentString(scene2)])];
         if (query) {
-          const api1 = await api.knaben_api_hit(query[0]);
-          if (api1.length === 0) {
-            var temp = [];
-            for (var i = 1; i < query.length - 1; i++) {
-              var api2 = await api.knaben_api_hit(query[i]);
-              temp = temp.concat(api2);
-            }
-            data = [...new Set(temp)];
-          } else {
-            data = [...new Set(api1)];
+          var temp = [];
+          for (var i = 0; i < query.length - 1; i++) {
+            var api2 = await api.knaben_api_hit(query[i]);
+            temp = temp.concat(api2);
           }
+          data = [...new Set(temp)];
         }
       }
     } else if (args.id.startsWith("TPDB-K")) {
@@ -668,7 +649,10 @@ builder.defineStreamHandler((args) => {
   return Promise.resolve({ streams: [] });
 });
 const addonInterface = builder.getInterface();
-app.use("/", getRouter(addonInterface));
+app.use("/", async (req, res) => {
+  getRouter(addonInterface);
+  res.redirect("/configure");
+});
 
 // 192.168.1.8:7000 -- LOCAL
 // app.listen(PORT, "0.0.0.0", () => console.log(`Addon active`));
