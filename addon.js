@@ -480,7 +480,7 @@ app.get("{/:config}/meta/:type/:id{/:skip}{/:genre}.json", async (req, res) => {
         posterShape: "poster",
         type: "movie",
         description: `${obj.name} => ${obj.description}. Queries = ${query}`,
-        trailerStreams: obj.trailerStreams,
+        trailerStreams: obj.trailerStreams || null,
         hash: obj.hash || null,
         magnetUrl: obj.magnetUrl || null,
         bytes: obj.bytes || null,
