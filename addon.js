@@ -265,10 +265,8 @@ app.get("/configure", (req, res) => {
             var manifestUrl;
             // if(!tpdb || !torbox) return alert("Please enter both keys!");
             if(!tpdb && !torbox) {
-              console.log("hi1");
               manifestUrl = window.location.origin + "/manifest.json";
             } else {
-              console.log("hi2");
               const config = btoa(JSON.stringify({ tpdb, torbox })).replace(/=/g, "");
               // const config = JSON.stringify({"torbox="+torbox+"/tpdb="+tpdb});
               // const config = JSON.stringify({"torbox=":torbox,"/tpdb=":tpdb});
@@ -573,17 +571,13 @@ app.get("{/:config}/stream/:type/:id{/:extra}.json", async (req, res) => {
 
     var stream = [];
     const apiKeys = args.config ? JSON.parse(atob(args.config)) : null;
-    console.log(apiKeys);
 
     if ((!apiKeys && !apiKeys?.torbox) || apiKeys?.torbox.length === 0) {
-      console.error("No API keys found in request!");
-
       stream = data.map((ele) => ({
         name: `${ele.name}`,
         description: `${(ele.bytes / 1024 / 1024 / 1024).toFixed(2)}GB - ${ele.title}`,
         infoHash: ele.hash,
       }));
-      
     } else {
       const TORBOX_API_KEY = apiKeys.torbox;
       var hashes = await data.map((ele) => ele.hash);
@@ -636,7 +630,6 @@ app.get("/:TORBOX_API_KEY/resolve/:hash/:magnet", async (req, res) => {
 
   // 1. Check if we already have a valid link for this hash
   if (cache.has(hash)) {
-    console.log("Using cached link for:", hash);
     return res.redirect(307, cache.get(hash));
   }
 
@@ -656,7 +649,6 @@ app.get("/:TORBOX_API_KEY/resolve/:hash/:magnet", async (req, res) => {
     cache.set(hash, torboxDownloadLink);
     setTimeout(() => cache.delete(hash), 3600000); // 1 hour in ms
 
-    console.log("New link generated and cached");
     res.redirect(307, torboxDownloadLink);
   } catch (err) {
     res.status(500).send("Streaming error");
