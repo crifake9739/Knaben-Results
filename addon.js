@@ -7,16 +7,16 @@ const {
 } = require("./torboxAPI.js");
 
 const express = require("express");
-const cors = require('cors');
+const cors = require("cors");
 
 const app = express();
-app.use(cors())
+app.use(cors());
 
 const category = {
   audio: 1000000,
   tv: 2000000,
   movie: 3000000,
-  adult: 5000000,
+  adult: 5001000,
   anime: 6000000,
 };
 
@@ -61,15 +61,15 @@ const manifest = {
   behaviorHints: {
     configurable: true,
   },
-  config: [
-    {
-      key: "torbox_api",
-      type: "text",
-      title: "Torbox API Key",
-      required: true,
-    },
-    { key: "PDB_api", type: "text", title: "PDB API Key", required: true },
-  ],
+  // config: [
+  //   {
+  //     key: "torbox_api",
+  //     type: "text",
+  //     title: "Torbox API Key",
+  //     required: false,
+  //   },
+  //   { key: "PDB_api", type: "text", title: "PDB API Key", required: false },
+  // ],
 };
 
 const poster =
@@ -127,7 +127,7 @@ async function THEPDB_metadata(metas) {
       released: ele.date ? new Date(ele.date) : null,
       cast: ele.performers ? ele.performers : null,
       trailers: ele.trailer ? [{ source: ele.trailer, type: "trailer" }] : null,
-      runtime: ele.duration ? `${(ele.duration/60).toFixed(0)} mins` : null,
+      runtime: ele.duration ? `${(ele.duration / 60).toFixed(0)} mins` : null,
       website: ele.url ? ele.url : null,
       site: ele.site,
       performers: ele.performers,
@@ -205,21 +205,27 @@ function parseSceneToTorrentString(scene) {
   return arr;
 }
 
+async function helperStream(hash) {
+  const VideoStream = await fetch(
+    `http://127.0.0.1:11470/local-addon/meta/other/bt:${hash}.json`,
+    {
+      // method: "GET",
+      headers: { "Content-Type": "application/json" },
+    },
+  )
+    .then((ele) => ele.json())
+    .then((ele) => ele.meta.videos);
+
+  const T_streams = await VideoStream.map((e) => {
+    data = e.stream;
+    data.name = e.title;
+    return data;
+  });
+
+  return T_streams;
+}
+
 const builder = new addonBuilder(manifest);
-
-builder.defineCatalogHandler((args) => {
-  return Promise.resolve({ catalog: [] });
-});
-builder.defineMetaHandler((args) => {
-  return Promise.resolve({ meta: [] });
-});
-builder.defineStreamHandler((args) => {
-  return Promise.resolve({ streams: [] });
-});
-
-const addonInterface = builder.getInterface();
-
-app.use("/", getRouter(addonInterface));
 
 app.get("/configure", (req, res) => {
   res.send(`
@@ -256,13 +262,18 @@ app.get("/configure", (req, res) => {
           function generate() {
             const tpdb = document.getElementById('tpdb').value;
             const torbox = document.getElementById('torbox').value;
-            
-            if(!tpdb || !torbox) return alert("Please enter both keys!");
-
-            const config = btoa(JSON.stringify({ tpdb, torbox })).replace(/=/g, "");
-            // const config = JSON.stringify({"torbox="+torbox+"/tpdb="+tpdb});
-            // const config = JSON.stringify({"torbox=":torbox,"/tpdb=":tpdb});
-            const manifestUrl = window.location.origin + "/" + config + "/manifest.json";
+            var manifestUrl;
+            // if(!tpdb || !torbox) return alert("Please enter both keys!");
+            if(!tpdb && !torbox) {
+              console.log("hi1");
+              manifestUrl = window.location.origin + "/manifest.json";
+            } else {
+              console.log("hi2");
+              const config = btoa(JSON.stringify({ tpdb, torbox })).replace(/=/g, "");
+              // const config = JSON.stringify({"torbox="+torbox+"/tpdb="+tpdb});
+              // const config = JSON.stringify({"torbox=":torbox,"/tpdb=":tpdb});
+              manifestUrl = window.location.origin + "/" + config + "/manifest.json";
+            } 
             
             // Show the box and set the value
             document.getElementById('urlBox').style.display = 'block';
@@ -286,12 +297,12 @@ app.get("/configure", (req, res) => {
   `);
 });
 
-app.get("/:config/manifest.json", (req, res) => {
+app.get("{/:config}/manifest.json", (req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.send(manifest);
 });
 
-app.get("/:config/catalog/:type/:id{/:extra}.json", async (req, res) => {
+app.get("{/:config}/catalog/:type/:id{/:extra}.json", async (req, res) => {
   const params = Object.fromEntries(new URLSearchParams(req.params?.extra));
   const args = {
     type: req.params?.type || null,
@@ -304,13 +315,12 @@ app.get("/:config/catalog/:type/:id{/:extra}.json", async (req, res) => {
 
   let skip = args?.skip ? parseInt(args.skip) : 0;
 
-  var stream = [];
   const apiKeys = args.config ? JSON.parse(atob(args.config)) : null;
 
   if (args.id == "knaben_top") {
     if (args?.search) {
       if (args.search && args.search.length > 3) {
-        let data = await api.knaben_api_hit(args.search, skip, 50);
+        let data = await api.knaben_api_hit(args.search, args.genre, skip, 50);
         const results = await push_to_metadata(data);
         res.send({ metas: results });
       } else {
@@ -321,7 +331,6 @@ app.get("/:config/catalog/:type/:id{/:extra}.json", async (req, res) => {
       if (!genre || genre === undefined) {
         genre = "none";
       }
-
       if (genre == "movie") {
         let data = await api.knaben_api_hit_no_query(skip, 50, category.movie);
         const results = await push_to_metadata(data);
@@ -414,7 +423,7 @@ app.get("/:config/catalog/:type/:id{/:extra}.json", async (req, res) => {
   }
 });
 
-app.get("/:config/meta/:type/:id{/:skip}{/:genre}.json", async (req, res) => {
+app.get("{/:config}/meta/:type/:id{/:skip}{/:genre}.json", async (req, res) => {
   const params = Object.fromEntries(new URLSearchParams(req.params?.extra));
   const args = {
     type: req.params?.type || null,
@@ -492,7 +501,7 @@ app.get("/:config/meta/:type/:id{/:skip}{/:genre}.json", async (req, res) => {
   }
 });
 
-app.get("/:config/stream/:type/:id{/:extra}.json", async (req, res) => {
+app.get("{/:config}/stream/:type/:id{/:extra}.json", async (req, res) => {
   const params = Object.fromEntries(new URLSearchParams(req.params?.extra));
   const args = {
     type: req.params?.type || null,
@@ -564,15 +573,17 @@ app.get("/:config/stream/:type/:id{/:extra}.json", async (req, res) => {
 
     var stream = [];
     const apiKeys = args.config ? JSON.parse(atob(args.config)) : null;
+    console.log(apiKeys);
 
-    if (!apiKeys && !apiKeys.torbox) {
+    if ((!apiKeys && !apiKeys?.torbox) || apiKeys?.torbox.length === 0) {
       console.error("No API keys found in request!");
 
       stream = data.map((ele) => ({
         name: `${ele.name}`,
         description: `${(ele.bytes / 1024 / 1024 / 1024).toFixed(2)}GB - ${ele.title}`,
-        url: ele.magnetUrl,
+        infoHash: ele.hash,
       }));
+      
     } else {
       const TORBOX_API_KEY = apiKeys.torbox;
       var hashes = await data.map((ele) => ele.hash);
@@ -589,14 +600,21 @@ app.get("/:config/stream/:type/:id{/:extra}.json", async (req, res) => {
         return ele;
       });
 
-      stream = streamData.map((ele) => ({
-        name: `torbox ${ele.cached ? "⚡" : "⏳"}`,
-        description: `${(ele.bytes / 1024 / 1024 / 1024).toFixed(2)}GB - ${ele.title}`,
-        url: ele.cached
-          // ? `https://localhost:${PORT}/${TORBOX_API_KEY}/resolve/${ele.hash}/${encodeURIComponent(ele.magnetUrl)}`
-          ? `https://knaben-results.vercel.app/${TORBOX_API_KEY}/resolve/${ele.hash}/${encodeURIComponent(ele.magnetUrl)}`
-          : ele.magnetUrl,
-      }));
+      stream = streamData.map((ele) => {
+        if (ele.cached) {
+          return {
+            name: `torbox ⚡`,
+            description: `${(ele.bytes / 1024 / 1024 / 1024).toFixed(2)}GB - ${ele.title}`,
+            // url: `https://localhost:${PORT}/${TORBOX_API_KEY}/resolve/${ele.hash}/${encodeURIComponent(ele.magnetUrl)}`,
+            url: `https://knaben-results.vercel.app/${TORBOX_API_KEY}/resolve/${ele.hash}/${encodeURIComponent(ele.magnetUrl)}`,
+          };
+        }
+        return {
+          name: `torbox ⏳`,
+          description: `${(ele.bytes / 1024 / 1024 / 1024).toFixed(2)}GB - ${ele.title}`,
+          infoHash: ele.hash,
+        };
+      });
     }
 
     if (stream.length > 0) {
@@ -645,14 +663,24 @@ app.get("/:TORBOX_API_KEY/resolve/:hash/:magnet", async (req, res) => {
   }
 });
 
-// 192.168.1.8:7000
-// app.listen(PORT, '0.0.0.0', () =>
-//   console.log(`Addon active`),
-// );
+builder.defineCatalogHandler((args) => {
+  return Promise.resolve({ catalog: [] });
+});
+builder.defineMetaHandler((args) => {
+  return Promise.resolve({ meta: [] });
+});
+builder.defineStreamHandler((args) => {
+  return Promise.resolve({ streams: [] });
+});
+const addonInterface = builder.getInterface();
+app.use("/", getRouter(addonInterface));
 
-if (process.env.NODE_ENV !== 'production') {
-    const port = process.env.PORT || 7000;
-    app.listen(port, () => console.log(`Local server on port ${port}`));
+// 192.168.1.8:7000 -- LOCAL
+// app.listen(PORT, "0.0.0.0", () => console.log(`Addon active`));
+
+if (process.env.NODE_ENV !== "production") {
+  const port = process.env.PORT || 7000;
+  app.listen(port, () => console.log(`Local server on port ${port}`));
 }
 
 // IMPORTANT: Export the app for Vercel

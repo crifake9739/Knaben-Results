@@ -1,9 +1,17 @@
 const knaben_url = "https://api.knaben.org/v1";
+const category = {
+  audio: 1000000,
+  tv: 2000000,
+  movie: 3000000,
+  adult: 5001000,
+  anime: 6000000,
+};
+
+const categories = [1000000, 2000000, 3000000, 5001000, 6000000];
 
 export async function knaben_api_hit_no_query_raw(skip, size) {
   console.log("Hit knaben_api_hit_no_query_raw");
-  const categories = [1000000, 2000000, 3000000, 5000000, 6000000]
-  
+
   let post_body = {
     from: skip || 0,
     size: size,
@@ -24,13 +32,15 @@ export async function knaben_api_hit_no_query_raw(skip, size) {
 
 export async function knaben_api_hit_no_query(skip, size, category) {
   console.log("Hit knaben_api_hit_no_query");
-  const categories = (!category) ? [1000000, 2000000, 3000000, 5000000, 6000000] : [category]
+  const categories = !category
+    ? [1000000, 2000000, 3000000, 5001000, 6000000]
+    : [category];
   let post_body = {
     from: skip || 0,
     size: size,
     categories: categories,
-    // order_by: "seeders",
-    // order_direction: "desc",
+    order_by: "seeders",
+    order_direction: "desc",
   };
 
   let respone = await fetch(knaben_url, {
@@ -43,12 +53,16 @@ export async function knaben_api_hit_no_query(skip, size, category) {
   return resp;
 }
 
-export async function knaben_api_hit(query, skip, size) {
+export async function knaben_api_hit(query, genre, skip, size) {
   console.log("Hit knaben_api_hit");
+  const categories = !genre
+    ? [1000000, 2000000, 3000000, 5001000, 6000000]
+    : [category[genre]];
   let post_body = {
     from: skip || 0,
     size: size,
     search_field: "title",
+    categories: categories,
     query: query,
     search_type: "70%",
   };
