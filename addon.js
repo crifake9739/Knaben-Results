@@ -129,7 +129,9 @@ async function THEPDB_metadata(metas) {
       releaseInfo: ele.date ? new Date(ele.date).getFullYear() : null,
       released: ele.date ? new Date(ele.date) : null,
       cast: ele.performers ? ele.performers : null,
-      trailerStreams: [{ url: ele.trailer, title: "Trailer" }],
+      trailerStreams: ele.trailer
+        ? [{ url: ele.trailer, title: "Trailer" }]
+        : null,
       runtime: ele.duration ? `${(ele.duration / 60).toFixed(0)} mins` : null,
       website: ele.url ? ele.url : null,
       site: ele.site,
