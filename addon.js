@@ -88,7 +88,7 @@ async function push_to_metadata(data) {
   data.forEach((ele) => {
     catalog_data.push({
       id: "TPDB-K/" + ele.hash,
-      name: ele.seeders + " " + ele.peers + " " + ele.title,
+      name: ele.title + " " + ele.seeders + " " + ele.peers,
       releaseInfo: ele.date ? new Date(ele.date).getFullYear() : null,
       type: "movie",
       poster: poster,
