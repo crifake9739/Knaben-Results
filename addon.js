@@ -227,7 +227,7 @@ async function helperStream(hash) {
 
 const builder = new addonBuilder(manifest);
 
-app.get("/configure", (req, res) => {
+app.get("{/:config}/configure", (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html>
